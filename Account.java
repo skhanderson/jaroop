@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class Account {
+    private File file;
     private String htmlfile;
     private RandomAccessFile htmlrandom;
     private FileChannel htmlchannel;
@@ -29,11 +30,16 @@ public class Account {
     /*
      * Creates an account using the passed html filename.
      * @param filename A string of the filename.
-     * @throws IOException Throws this if there is a problem with the file or can't lock it.
+     * @throws IOException Throws this if there is a problem with the file 
+     * (doesn't exist) or can't lock it.
      */
     public Account(String filename) throws IOException {
 	htmlfile = filename;
-	htmlrandom = new RandomAccessFile(new File(filename), "rw");
+	file = new File(filename);
+	if (!file.exists()) {
+	    throw new IOException();
+	}
+	htmlrandom = new RandomAccessFile(file, "rw");
 	htmlchannel = htmlrandom.getChannel();
 	lock = htmlchannel.tryLock();
 	if (lock == null) {
