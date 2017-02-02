@@ -111,7 +111,7 @@ class bank {
      * @return A float representing the amount.
      * @throws IOException possibly from the readline.
      */
-    public static float askAmount(BufferedReader in, String prompt) throws IOEXception {
+    public static float askAmount(BufferedReader in, String prompt) throws IOException {
 	float amount = (float)-1.0;
 	String line = "";
 	while (amount <= 0.0) {
@@ -216,7 +216,7 @@ class bank {
 		    System.out.format("The current balance is: $%.2f\n", balance);
 		}
 		else if (line.equals("WITHDRAW")) {
-		    amount = askAmount(in, "Please enter an amount to withdraw:");
+		    float amount = askAmount(in, "Please enter an amount to withdraw:");
 		    float balance = getBalance(htmlrandom);
 		    if (amount > balance) {
 			System.out.println("Insufficient balance.");
