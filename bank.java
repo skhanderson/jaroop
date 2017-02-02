@@ -33,15 +33,9 @@ hopefully this is sufficient to get us to the next steps.
 Steve Handerson
 */
 
-
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.skhanderson.Account;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.RandomAccessFile;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.InputStream;
@@ -49,57 +43,9 @@ import java.io.FileInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.nio.channels.FileChannel;
-import java.nio.channels.Channels;
-import java.nio.channels.FileLock;
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 class bank {
-    /**
-     * Reads the contents from a RandomAccessFile.
-     * @param f The RandomAccessFile.
-     * @return The String which is the contents.
-     * @throws IOException if there is an exception on the file.
-     */
-    public static String instream_to_contents(RandomAccessFile f) throws IOException {
-	f.seek(0);
-	InputStream instream = Channels.newInputStream(f.getChannel());
-	StringBuilder result = new StringBuilder();
-	int c;
-	while (-1 != (c = instream.read()))
-	    result.append((char)c);
-	return result.toString();
-    }
-    /**
-     * Parses a RandomAccessFile into a Jsoup Document.
-     * @param f The RandomAccessFile.
-     * @returns A Jsoup Document.
-     * @throws IOException if there is an exception on the file.
-     */
-    public static Document parseFile(RandomAccessFile f) throws IOException {
-	String contents = instream_to_contents(f);
-	Document doc = Jsoup.parse(contents);
-	return doc;
-    }
-
-    /**
-     * Gets the balance from the RandomAccessFile representing the account.
-     * @param f the RandomAccessFile of the account html file.
-     * @returns A float representing the current balance.
-     * @throws IOException if there is an exception on the file.
-     */
-    public static float getBalance(RandomAccessFile f) throws IOException {
-	float balance = (float)0.0;
-	Document doc = parseFile(f);
-	Elements transactions = doc.select("table[id=transactions]");
-	for (Element sub: transactions.select("td")) {
-	    float amount = Float.parseFloat(sub.text().trim());
-	    balance += amount;
-	}
-	return balance;
-    }
 
     /**
      * A function that repeatedly asks the user for a valid amount.
@@ -131,39 +77,6 @@ class bank {
 	return amount;
     }
 
-    /**
-     * Function that appends a numeric transaction to the account file.
-     * <p>
-     * No checking is done whether the amount is valid.
-     * It is up to the user to determine whether the transaction 
-     * (for instance, a withdrawal) is valid, and there is enough 
-     * money in the account.
-     * 
-     * @param file The RandomAccessFile representing the html account file.
-     * @param num The amount of the transaction as a float.
-     */
-    public static void AppendRecord(RandomAccessFile file, float num) throws IOException {
-	Document doc = parseFile(file);
-	Elements transactions = doc.select("table[id=transactions]");
-	Element last = null;
-	for (Element el: transactions) {
-	    last = el;
-	}
-	Elements tbody = last.select("tbody");
-	for (Element el: tbody) {
-	    last = el;
-	}
-	String text = String.format("%.2f", num);
-	last.appendElement("tr").appendElement("td").text(text);
-	String newcontents = doc.html();
-	if (newcontents != null) {
-	    file.seek(0);
-	    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(file.getChannel())));
-	    out.write(newcontents);
-	    out.flush();
-	    file.setLength(newcontents.length());
-	}
-    }
 
 
     /* 
@@ -188,16 +101,9 @@ class bank {
 	if (args.length > 0) {
 	    htmlfilename = args[0];
 	}
-	File htmlfile = new File(htmlfilename);
 	BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 	try {
-	    RandomAccessFile htmlrandom = new RandomAccessFile(htmlfile, "rw");
-	    FileChannel htmlchannel = htmlrandom.getChannel();
-	    FileLock lock = htmlchannel.tryLock();
-	    if (lock == null) {
-		System.err.println("Can't lock the account log.");
-		System.exit(1);
-	    }
+	    Account account = new Account(htmlfilename);
 	    while (true) {
 		System.out.print("Please enter in a command (Deposit, Withdraw, Balance, Exit) :");
 		String line = "";
@@ -212,21 +118,21 @@ class bank {
 		    System.exit(0);
 		}
 		else if (line.equals("BALANCE")) {
-		    float balance = getBalance(htmlrandom);
-		    System.out.format("The current balance is: $%.2f\n", balance);
+		    float bal = account.balance();
+		    System.out.format("The current balance is: $%.2f\n", bal);
 		}
 		else if (line.equals("WITHDRAW")) {
 		    float amount = askAmount(in, "Please enter an amount to withdraw:");
-		    float balance = getBalance(htmlrandom);
+		    float balance = account.balance();
 		    if (amount > balance) {
 			System.out.println("Insufficient balance.");
 		    } else {
-			AppendRecord(htmlrandom, -amount);
+			account.appendRecord(-amount);
 		    }
 		}
 		else if (line.equals("DEPOSIT")) {
 		    float amount = askAmount(in, "Please enter an amount to deposit:");
-		    AppendRecord(htmlrandom, amount);
+		    account.appendRecord(amount);
 		} else {
 		    System.out.println("Unrecognized command.");
 		}
