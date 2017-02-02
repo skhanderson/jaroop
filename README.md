@@ -2,6 +2,7 @@
 
 To compile:
 ```
+export CLASSPATH=jsoup-1.10.2.jar
 javac bank.java
 jar cf bank.jar bank.class
 ```
