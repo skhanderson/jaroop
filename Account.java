@@ -45,6 +45,11 @@ public class Account {
 	if (lock == null) {
 	    throw new IOException();
 	}
+	Document doc = parseFile();
+	Elements transactions = doc.select("table[id=transactions]");
+	if (transactions.isEmpty()) {
+	    throw new IOException();
+	}
     }
 
     /**
