@@ -2,14 +2,12 @@
 
 To compile:
 ```
-export CLASSPATH=jsoup-1.10.2.jar
-javac bank.java
-jar cf bank.jar bank.class
+make bank.jar
 ```
 
 To run:
 ```
-java -cp bank.jar:jsoup-1.10.2.jar bank log.html
+make run
 ```
 
 Comments are in the file bank.java.
